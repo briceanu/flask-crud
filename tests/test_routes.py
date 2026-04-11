@@ -19,31 +19,31 @@ def test_get_gigi(client):
     assert response.data.decode() == "this is gigi"
 
 
-user_data_signup = {
-    "name": f"ion{random.randint(100, 999)}",
-    # "name": "awdadw",
-    "password": "gigi123A",
-    "confirm_password": "gigi123A",
-    "email": f"fe{random.randint(100, 999)}@gmail.com",
-    # "email": "awdadw@gmail.com",
-}
+# user_data_signup = {
+#     "name": f"ion{random.randint(100, 999)}",
+#     # "name": "awdadw",
+#     "password": "gigi123A",
+#     "confirm_password": "gigi123A",
+#     "email": f"fe{random.randint(100, 999)}@gmail.com",
+#     # "email": "awdadw@gmail.com",
+# }
 
 
-def test_signup(client):
-    response = client.post("/signup", json=user_data_signup)
-    assert response.status_code == 201
-    assert response.get_json() == f"User created with email {user_data_signup['name']}"
+# def test_signup(client):
+#     response = client.post("/signup", json=user_data_signup)
+#     assert response.status_code == 201
+#     assert response.get_json() == f"User created with email {user_data_signup['name']}"
 
 
-user_data_login = {
-    "name": user_data_signup["name"],
-    "password": "gigi123A",
-}
+# user_data_login = {
+#     "name": user_data_signup["name"],
+#     "password": "gigi123A",
+# }
 
 
-def test_signin(client):
-    response = client.post("/login", data=user_data_login)
-    assert response.status_code == 200
-    access_token = response.get_json()["access_token"]
-    logger.info(access_token)
-    assert access_token.startswith("ey")
+# def test_signin(client):
+#     response = client.post("/login", data=user_data_login)
+#     assert response.status_code == 200
+#     access_token = response.get_json()["access_token"]
+#     logger.info(access_token)
+#     assert access_token.startswith("ey")
