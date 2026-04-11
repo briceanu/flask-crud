@@ -33,7 +33,7 @@ jobs:
         run: docker compose up -d --build
 
       - name: Run tests
-        run: docker exec -it flask_app pytest -s
+        run: docker exec flask_app pytest 
         env:
           PG_USER: ${{ secrets.PG_USER }}
           PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
