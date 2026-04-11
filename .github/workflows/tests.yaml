@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4   # 🔴 REQUIRED
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -18,7 +19,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run tests
-        run: docker exec -it flask_app pytest 
+        run: pytest
