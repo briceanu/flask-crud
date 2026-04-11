@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build containers
-        run: docker-compose up -d --build
+        run: docker compose up -d --build
 
       - name: Run tests in container
         run: docker exec flask_app pytest -s
