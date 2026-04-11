@@ -28,8 +28,12 @@ services:
     command: flask run --host=0.0.0.0 --reload
     ports:
       - "5000:5000"
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
     depends_on:
       - db
       - redis
