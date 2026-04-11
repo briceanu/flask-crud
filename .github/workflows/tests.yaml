@@ -17,6 +17,7 @@ jobs:
           echo "PG_USER=${{ secrets.PG_USER }}" >> .env
           echo "PG_PASSWORD=${{ secrets.PG_PASSWORD }}" >> .env
           echo "PG_DB=${{ secrets.PG_DB }}" >> .env
+          echo "PG_PORT=${{secrets.PG_PORT}}" >> .env
 
       - name: Set up Python
         uses: actions/setup-python@v5
