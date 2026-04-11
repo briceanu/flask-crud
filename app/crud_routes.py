@@ -270,4 +270,6 @@ def get_new_access_token():
 
 @main_routes.post("/upload-image")
 def upload_user_image():
+    user_image = request.files["file"]
+    print(user_image.filename)
     return "image uploadd"
