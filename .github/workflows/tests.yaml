@@ -31,6 +31,12 @@ jobs:
 
       - name: Build containers
         run: docker compose up -d --build
+        env:
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DB: ${{ secrets.PG_DB }}
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_HOST: db
 
       - name: Run tests
         run: docker exec flask_app pytest 
