@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set env variables
+      - name: Create .env file
         run: |
-          export PG_USER=test
-          export PG_PASSWORD=test
-          export PG_DB=test
+          echo "PG_USER=${{ secrets.PG_USER }}" >> .env
+          echo "PG_PASSWORD=${{ secrets.PG_PASSWORD }}" >> .env
+          echo "PG_DB=${{ secrets.PG_DB }}" >> .env
       - name: Checkout code
         uses: actions/checkout@v4
 
