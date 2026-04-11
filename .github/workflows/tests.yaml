@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set env variables
+        run: |
+          export PG_USER=test
+          export PG_PASSWORD=test
+          export PG_DB=test
       - name: Checkout code
         uses: actions/checkout@v4
 
