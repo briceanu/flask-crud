@@ -32,7 +32,7 @@ user_data_signup = {
 def test_signup(client):
     response = client.post("/signup", json=user_data_signup)
     assert response.status_code == 201
-    assert response.get_json() == f"User created with email {user_data_signup['name']}"
+    assert response.get_json() == f"User created with name {user_data_signup['name']}"
 
 
 # user_data_login = {

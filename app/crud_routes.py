@@ -152,8 +152,8 @@ def signup_user():
         stmt = insert(User).values(**user_data)
         db.session.execute(stmt)
         db.session.commit()
-        logger.info(f"User created with email {user_data['name']}")
-        return jsonify(f"User created with email {user_data['name']}"), 201
+        logger.info(f"User created with name {user_data['name']}")
+        return jsonify("Account successfully created"), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Bad Request", "details": str(e)}), 400
