@@ -32,5 +32,11 @@ jobs:
       - name: Build containers
         run: docker compose up -d --build
 
-      - name: Run tests in container
+      - name: Run tests
         run: pytest
+        env:
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DB: ${{ secrets.PG_DB }}
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_HOST: localhost
