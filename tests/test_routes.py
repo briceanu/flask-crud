@@ -30,18 +30,21 @@ user_data_signup = {
 def test_signup(client):
     response = client.post("/signup", json=user_data_signup)
     assert response.status_code == 201
-    assert response.get_json() == "Account successfully created"
+    assert (
+        response.get_json()
+        == f"Account successfully created {user_data_signup['name']}"
+    )
 
 
-# user_data_login = {
-#     "name": user_data_signup["name"],
-#     "password": "gigi123A",
-# }
+user_data_login = {
+    "name": user_data_signup["name"],
+    "password": "gigi123A",
+}
 
 
-# def test_signin(client):
-#     response = client.post("/login", data=user_data_login)
-#     assert response.status_code == 200
-#     access_token = response.get_json()["access_token"]
-#     logger.info(access_token)
-#     assert access_token.startswith("ey")
+def test_signin(client):
+    response = client.post("/login", data=user_data_login)
+    assert response.status_code == 200
+    access_token = response.get_json()["access_token"]
+    logger.info(access_token)
+    assert access_token.startswith("ey")
