@@ -20,12 +20,12 @@ def test_get_gigi(client):
 
 
 user_data_signup = {
-    # "name": f"ion{random.randint(100, 999)}",
-    "name": "awdadw90909",
+    "name": f"ion{random.randint(100, 999)}",
+    # "name": "awdadw90909",
     "password": "gigi123A",
     "confirm_password": "gigi123A",
-    # "email": f"fe{random.randint(100, 999)}@gmail.com",
-    "email": "awdadw908h0@gmail.com",
+    "email": f"fe{random.randint(100, 999)}@gmail.com",
+    # "email": "awdadw908h0@gmail.com",
 }
 
 
