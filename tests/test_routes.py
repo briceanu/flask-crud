@@ -16,7 +16,7 @@ def client():
 def test_get_gigi(client):
     response = client.get("/gigi")
     assert response.status_code == 200
-    assert response.data.decode() == "this is gigi"
+    assert response.data.decode() == "this is gigi 2"
 
 
 user_data_signup = {
