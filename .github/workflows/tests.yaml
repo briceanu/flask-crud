@@ -32,4 +32,4 @@ jobs:
         run: docker compose up -d --build
 
       - name: Run tests in container
-        run: docker exec flask_app pytest -s
+        run: docker exec -it flask_app pytest -s
