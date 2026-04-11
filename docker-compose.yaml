@@ -23,6 +23,7 @@ services:
 
   app:
     build: .
+    dockerfile: Dockerfile
     container_name: flask_app
     command: flask run --host=0.0.0.0 --reload
     ports:
