@@ -20,6 +20,7 @@ jobs:
           echo "PG_DB=${{ secrets.PG_DB }}" >> .env
           echo "PG_PORT=${{ secrets.PG_PORT }}" >> .env
           echo "PG_HOST=db" >> .env
+          echo "JWT_SECRET_KEY" >> .env
 
       - name: Set up Python
         uses: actions/setup-python@v5
