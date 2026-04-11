@@ -12,6 +12,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ✅ ADD IT HERE (right after checkout)
+      - name: Create .env file
+        run: |
+          echo "PG_USER=${{ secrets.PG_USER }}" >> .env
+          echo "PG_PASSWORD=${{ secrets.PG_PASSWORD }}" >> .env
+          echo "PG_DB=${{ secrets.PG_DB }}" >> .env
+          echo "PG_PORT=${{ secrets.PG_PORT }}" >> .env
+          echo "PG_HOST=db" >> .env
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -22,14 +31,9 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
+      # ❗ REMOVE env: block (not needed anymore)
       - name: Start containers
         run: docker compose up -d --build
-        env:
-          PG_USER: ${{ secrets.PG_USER }}
-          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
-          PG_DB: ${{ secrets.PG_DB }}
-          PG_PORT: ${{ secrets.PG_PORT }}
-          PG_HOST: db
 
       - name: Show logs if crash happens
         run: docker compose logs
