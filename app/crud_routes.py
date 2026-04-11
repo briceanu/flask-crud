@@ -266,3 +266,8 @@ def get_new_access_token():
         return jsonify({"error": "Server error", "details": str(e)}), 500
     finally:
         db.session.close()
+
+
+@main_routes.post("/upload-image")
+def upload_user_image():
+    return "image uploadd"
