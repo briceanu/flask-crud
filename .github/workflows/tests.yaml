@@ -12,13 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file
-        run: |
-          echo "PG_USER=${{ secrets.PG_USER }}" >> .env
-          echo "PG_PASSWORD=${{ secrets.PG_PASSWORD }}" >> .env
-          echo "PG_DB=${{ secrets.PG_DB }}" >> .env
-          echo "PG_PORT=${{secrets.PG_PORT}}" >> .env
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-      - name: Build containers
+      - name: Start containers
         run: docker compose up -d --build
         env:
           PG_USER: ${{ secrets.PG_USER }}
@@ -38,11 +31,8 @@ jobs:
           PG_PORT: ${{ secrets.PG_PORT }}
           PG_HOST: db
 
+      - name: Wait for DB
+        run: sleep 5
+
       - name: Run tests
         run: docker exec flask_app pytest 
-        env:
-          PG_USER: ${{ secrets.PG_USER }}
-          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
-          PG_DB: ${{ secrets.PG_DB }}
-          PG_PORT: ${{ secrets.PG_PORT }}
-          PG_HOST: localhost
