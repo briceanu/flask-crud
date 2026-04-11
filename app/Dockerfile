@@ -17,5 +17,5 @@ COPY . .
 # Expose Flask port
 EXPOSE 5000
 
-ENV FLASK_APP=main
+ENV FLASK_APP=app.main
 ENV FLASK_ENV=development

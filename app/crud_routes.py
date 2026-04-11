@@ -28,6 +28,11 @@ from .authentication import black_list_token, is_token_blacklisted
 main_routes = Blueprint("main_routes", __name__)
 
 
+@main_routes.get("/gigi")
+def get_gigi():
+    return "this is gigi"
+
+
 @main_routes.route("/create", methods=["POST"])
 def create_todo():
     try:
@@ -147,8 +152,8 @@ def signup_user():
         stmt = insert(User).values(**user_data)
         db.session.execute(stmt)
         db.session.commit()
-        logger.info(f"User created with email {user_data['email']}")
-        return jsonify(f"User created with email {user_data['email']}"), 201
+        logger.info(f"User created with email {user_data['name']}")
+        return jsonify(f"User created with email {user_data['name']}"), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Bad Request", "details": str(e)}), 400
@@ -163,17 +168,19 @@ def signup_user():
 @jwt_required()
 def get_all_users():
     try:
-        token = request.headers.get("Authorization")
-        decoded_token = decode_token(token.split()[1])
+        auth_header = request.headers.get("Authorization", None)
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Missing or invalid token"}), 401
+        decoded_token = decode_token(auth_header.split()[1])
         if decoded_token["scope"] != "admin":
             logger.warning(
                 "Unauthorized access attempt by user with scope: "
                 + decoded_token["scope"]
             )
             return jsonify({"error": "Unauthorized access"}), 403
-        todos = db.session.execute(select(User)).scalars().all()
+        users = db.session.execute(select(User)).scalars().all()
         schema = UserSchemaOut(many=True)
-        return jsonify(schema.dump(todos)), 200
+        return jsonify(schema.dump(users)), 200
 
     except Exception as e:
         return jsonify({"error": "Server error", "details": str(e)}), 500
