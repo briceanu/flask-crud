@@ -23,6 +23,27 @@ from sqlalchemy import delete, insert, select, update
 from .logger import logger
 from .extensions import db
 from .authentication import black_list_token, is_token_blacklisted
+from app.celery_tasks import upload_image_to_s3_task
+from app.aws_logic import AwsService
+
+import uuid
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+environment = os.getenv("ENVIRONMENT")
+
+aws_service = AwsService()
+
+# loading environment variables for development
+if environment == "development":
+    aws_access_key_id = os.getenv("aws_access_key_id")
+    aws_secret_access_key = os.getenv("aws_secret_access_key")
+    region_name = os.getenv("region_name")
+    bucket = os.getenv("BUCKET")
+
 
 # Create a blueprint
 main_routes = Blueprint("main_routes", __name__)
@@ -268,8 +289,38 @@ def get_new_access_token():
         db.session.close()
 
 
-@main_routes.post("/upload-image")
+@main_routes.route("/upload-image", methods=["POST"])
 def upload_user_image():
-    user_image = request.files["file"]
-    print(user_image.filename)
-    return "image uploadd"
+    try:
+        # saving todo
+        todo_schema = TodoSchemaIn()
+        todo_data = todo_schema.load(request.form)
+        stmt = insert(Todo).values(**todo_data)
+        db.session.execute(stmt)
+        db.session.commit()
+
+        # uplaod to s3
+        user_image = request.files["profile_image"]
+        image_bytes = user_image.read()
+        content_type = user_image.content_type
+        logger.info(content_type)
+        key = str(uuid.uuid4())
+        upload_image_to_s3_task.delay(
+            body=image_bytes, content_type=content_type, key=key, bucket=bucket
+        )
+
+        return jsonify({"Success": "Image uploaded successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error("An error occured")
+        return jsonify({"error": "Bad Request", "details": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": "Server error", "details": str(e)}), 500
+
+
+@main_routes.route("/stream", methods=["GET"])
+def stream_video():
+    # key: str, bucket: str
+    video_url = aws_service.get_s3_presigned_url(key="", bucket=bucket)
+
+    return {"video_url": video_url}

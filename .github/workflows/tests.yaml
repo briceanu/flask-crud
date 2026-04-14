@@ -40,7 +40,9 @@ jobs:
 
       - name: Show logs if crash happens
         run: docker compose logs
+
       - name: Run migrations
         run: docker exec flask_app flask db upgrade
+        
       - name: Run tests properly
         run: docker exec  flask_app pytest
