@@ -1,6 +1,8 @@
 # routes.py
-
-from flask import Blueprint, request, jsonify
+from werkzeug.exceptions import HTTPException
+from flask import Blueprint, Response, abort, request, jsonify
+from sqlalchemy.exc import IntegrityError
+from marshmallow import ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, timezone
 from flask_jwt_extended import (
@@ -49,11 +51,6 @@ if environment == "development":
 main_routes = Blueprint("main_routes", __name__)
 
 
-@main_routes.get("/gigi")
-def get_gigi():
-    return "this is gigi"
-
-
 @main_routes.route("/create", methods=["POST"])
 def create_todo():
     try:
@@ -64,9 +61,12 @@ def create_todo():
         db.session.commit()
         logger.info(f"Todo created with id {todo_data['id']}")
         return jsonify(f"your task has been created. Task id {todo_data['id']}"), 201
-    except Exception as e:
+    except ValidationError as e:
         db.session.rollback()
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
+        abort(400, description=e.messages)
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
     finally:
         db.session.close()
 
@@ -77,9 +77,9 @@ def get_todos():
         todos = db.session.execute(select(Todo)).scalars().all()
         schema = TodoSchemaOut(many=True)
         return jsonify(schema.dump(todos)), 200
-
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
     finally:
         db.session.close()
 
@@ -91,14 +91,16 @@ def get_todo(id):
         todo = db.session.execute(stmt).scalar_one_or_none()
         if not todo:
             logger.error(f"Todo with id {id} not found")
-            return jsonify({"error": f"Todo with id {id} not found"}), 404
+            abort(404, description=f"Todo with id {id} not found")
         schema = TodoSchemaOut(exclude=["email", "age"])
         logger.info(todo)
         return jsonify(schema.dump(todo)), 200
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
-    finally:
+    except HTTPException:
+        raise
+    except Exception:
         db.session.close()
+        logger.exception("Server error")
+        abort(500)
 
 
 @main_routes.route("/todo/<uuid:id>", methods=["DELETE"])
@@ -108,13 +110,15 @@ def remove_one_todo(id):
         todo = db.session.execute(stmt).scalar_one_or_none()
         if not todo:
             logger.error(f"Todo with id {id} not found")
-            return jsonify({"error": f"Todo with id {id} not found"}), 404
+            abort(404, description=f"Todo with id {id} not found")
         db.session.commit()
         return jsonify({"Success": f"Todo with id {id} removed"}), 200
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
-    finally:
+    except HTTPException:
+        raise
+    except Exception:
         db.session.close()
+        logger.exception("Server error")
+        abort(500)
 
 
 @main_routes.route("/todo/update/<uuid:id>", methods=["PUT"])
@@ -126,15 +130,18 @@ def update_todo(id):
         todo = db.session.execute(stmt).scalar_one_or_none()
         if not todo:
             logger.error(f"Todo with id {id} not found")
-            return jsonify({"error": f"Todo with id {id} not found"}), 404
+            abort(404, description=f"Todo with id {id} not found")
         db.session.commit()
         logger.info(f"Todo with id {id} updated")
         return jsonify(f"Todo with id {id} updated"), 200
-    except Exception as e:
+    except HTTPException:
+        raise
+    except ValidationError as e:
         db.session.rollback()
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+        abort(400, description=e.messages)
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
     finally:
         db.session.close()
 
@@ -152,11 +159,14 @@ def update_todo_title(id):
         db.session.commit()
         logger.info(f"Todo with id {id} updated")
         return jsonify(f"Todo with id {id} updated"), 200
-    except Exception as e:
+    except HTTPException:
+        raise
+    except ValidationError as e:
         db.session.rollback()
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+        abort(400, description=e.messages)
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
     finally:
         db.session.close()
 
@@ -173,13 +183,33 @@ def signup_user():
         stmt = insert(User).values(**user_data)
         db.session.execute(stmt)
         db.session.commit()
+
         logger.info(f"User created with name {user_data['name']}")
         return jsonify(f"Account successfully created {user_data['name']}"), 201
-    except Exception as e:
+
+    except ValidationError as e:
         db.session.rollback()
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+        abort(400, description=e.messages)
+
+    except IntegrityError as e:
+        db.session.rollback()
+        error_str = str(e.orig)
+
+        if "users_email_key" in error_str:
+            abort(409, description="Email already exists")
+
+        elif "users_name_key" in error_str:
+            abort(409, description="Username already exists")
+
+        else:
+            logger.exception("Integrity error")
+            abort(500, description="Internal server error")
+
+    except Exception:
+        db.session.rollback()
+        logger.exception("Unexpected signup error")
+        abort(500)
+
     finally:
         db.session.close()
 
@@ -191,6 +221,8 @@ def get_all_users():
     try:
         auth_header = request.headers.get("Authorization", None)
         if not auth_header or not auth_header.startswith("Bearer "):
+            # We don't use abort() here because flask-jwt-extended handles errors
+            # internally and returns JSON responses automatically.
             return jsonify({"error": "Missing or invalid token"}), 401
         decoded_token = decode_token(auth_header.split()[1])
         if decoded_token["scope"] != "admin":
@@ -198,13 +230,16 @@ def get_all_users():
                 "Unauthorized access attempt by user with scope: "
                 + decoded_token["scope"]
             )
+            # We don't use abort() here because flask-jwt-extended handles errors
+            # internally and returns JSON responses automatically.
             return jsonify({"error": "Unauthorized access"}), 403
         users = db.session.execute(select(User)).scalars().all()
         schema = UserSchemaOut(many=True)
         return jsonify(schema.dump(users)), 200
 
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+    except Exception:
+        logger.exception("Unexpected signup error")
+        abort(500)
     finally:
         db.session.close()
 
@@ -216,9 +251,14 @@ def login():
     password = request.form.get("password", None)
     stmt = select(User).where(User.name == username)
     user_from_db = db.session.execute(stmt).scalar_one_or_none()
+    logger.info(user_from_db)
     if not user_from_db:
+        # We don't use abort() here because flask-jwt-extended handles errors
+        # internally and returns JSON responses automatically.
         return jsonify({"error": "Invalid username or password"}), 401
     if not check_password_hash(user_from_db.password, password):
+        # We don't use abort() here because flask-jwt-extended handles errors
+        # internally and returns JSON responses automatically.
         return jsonify({"error": "Invalid username or password"}), 401
     # You can use the additional_claims argument to either add
     # custom claims or override default claims in the JWT.
@@ -226,7 +266,7 @@ def login():
     access_token = create_access_token(
         identity=username,
         additional_claims=additional_claims,
-        expires_delta=timedelta(minutes=1),
+        expires_delta=timedelta(minutes=30),
     )
     refresh_token = create_refresh_token(
         identity=username,
@@ -244,18 +284,24 @@ def logout_user():
         token_jti = decoded_token["jti"]
         token_exp = decoded_token["exp"]
         if decoded_token["type"] != "refresh":
-            return jsonify({"error": "Only refresh tokens can be blacklisted"}), 400
+            abort(400, description="Only refresh tokens can be blacklisted")
         if not token_jti or not token_exp:
-            return jsonify({"error": "Invalid token"}), 400
+            abort(400, description="Invalid token")
 
         if is_token_blacklisted(jti=token_jti) == 1:
-            return jsonify(detail="Token already black listed."), 400
+            abort(400, description="Token already black listed.")
 
         ttl = int(token_exp) - int(datetime.now(timezone.utc).timestamp())
         black_list_token(token_jti, ttl)
         return jsonify({"message": "Successfully logged out"}), 200
+    except HTTPException:
+        raise
     except Exception as e:
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
+        logger.exception("Unexpected error")
+        abort(400, description=str(e))
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
 
 
 @main_routes.route("/new-access-token", methods=["POST"])
@@ -264,29 +310,30 @@ def get_new_access_token():
         token = request.headers.get("Authorization")
         decoded_token = decode_token(token.split()[1])
         if decoded_token["type"] != "refresh":
-            return jsonify({"error": "Refresh token required"}), 400
+            abort(400, description="Refresh token required")
         if is_token_blacklisted(jti=decoded_token["jti"]) == 1:
-            return jsonify({"error": "Token is blacklisted"}), 400
+            abort(400, description="Token is blacklisted.")
         stmt = select(User).where(User.name == decoded_token["sub"])
         user_from_db = db.session.execute(stmt).scalar_one_or_none()
         if not user_from_db:
-            return jsonify({"error": "Invalid token"}), 400
+            abort(400, description="Invalid token")
         if user_from_db.scope != decoded_token["scope"]:
             logger.warning(
                 f"Unauthorized access attempt by user with scope {user_from_db.scope}"
             )
-            return jsonify({"error": "Invalid token"}), 400
+            abort(400, description="Invalid token")
 
         return create_access_token(
             identity=user_from_db.name, additional_claims={"scope": user_from_db.scope}
         ), 200
+    except HTTPException:
+        raise
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
-    finally:
-        db.session.close()
+        logger.exception("Unexpected error")
+        abort(400, description=str(e))
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
 
 
 @main_routes.route("/upload-image", methods=["POST"])
@@ -310,17 +357,36 @@ def upload_user_image():
         )
 
         return jsonify({"Success": "Image uploaded successfully"}), 201
+    except HTTPException:
+        raise
     except Exception as e:
-        db.session.rollback()
-        logger.error("An error occured")
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "Server error", "details": str(e)}), 500
+        logger.exception("Unexpected error")
+        abort(400, description=str(e))
+    except Exception:
+        logger.exception("Server error")
+        abort(500)
 
 
 @main_routes.route("/stream", methods=["GET"])
 def stream_video():
     # key: str, bucket: str
+    # streaming is handled by aws so no need of a generator
     video_url = aws_service.get_s3_presigned_url(key="", bucket=bucket)
 
     return {"video_url": video_url}
+
+
+@main_routes.route("/video", methods=["GET"])
+def get_the_movie():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, ".", "short_video.mp4")
+
+        def generate():
+            with open(file_path, "rb") as file:
+                while chunk := file.read(1024 * 10):
+                    yield chunk
+
+        return Response(generate(), mimetype="video/mp4")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

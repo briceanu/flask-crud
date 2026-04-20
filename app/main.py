@@ -1,6 +1,8 @@
 # main.py
 from flask import Flask
 from flask_migrate import Migrate
+
+from app.errors import register_error_handlers
 from .extensions import db
 from .crud_routes import main_routes
 from .db_connection import DB_URL
@@ -18,6 +20,9 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1000 * 1000
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
+
+register_error_handlers(app)
+
 # Initialize SQLAlchemy with Flask
 db.init_app(app)
 
