@@ -1,6 +1,9 @@
 # main.py
-from flask import Flask
 from flask_migrate import Migrate
+from flask import Flask
+# from flask import g
+
+# from flask import request, abort
 
 from app.errors import register_error_handlers
 from .extensions import db
@@ -22,6 +25,19 @@ app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
 
 register_error_handlers(app)
+
+
+# @app.before_request
+# def get_header():
+#     if request.headers.get("X-HEADER") != "gigi":
+#         abort(403, description="Invalid or missing X-HEADER")
+
+
+# @app.after_request
+# def set_header(response):
+#     response.headers["X-GIGI"] = g.todo_id
+#     return response
+
 
 # Initialize SQLAlchemy with Flask
 db.init_app(app)

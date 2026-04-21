@@ -1,6 +1,8 @@
 # routes.py
 from werkzeug.exceptions import HTTPException
 from flask import Blueprint, Response, abort, request, jsonify
+
+# from flask import g
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -94,6 +96,7 @@ def get_todo(id):
             abort(404, description=f"Todo with id {id} not found")
         schema = TodoSchemaOut(exclude=["email", "age"])
         logger.info(todo)
+        # g.todo_id = str(todo.id)
         return jsonify(schema.dump(todo)), 200
     except HTTPException:
         raise
