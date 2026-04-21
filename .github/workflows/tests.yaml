@@ -43,6 +43,6 @@ jobs:
 
       - name: Run migrations
         run: docker exec flask_app flask db upgrade
-        
+        # wad
       - name: Run tests properly
         run: docker exec  flask_app pytest
