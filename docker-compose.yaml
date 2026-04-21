@@ -21,19 +21,52 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    restart: unless-stopped
+
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: flask_app
     command: flask run --host=0.0.0.0 --reload
     ports:
       - "5000:5000"
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
     depends_on:
       - db
       - redis
+      - rabbitmq
     volumes:
       - .:/app
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    command: celery -A app.celery_tasks.celery_app worker --loglevel=info
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    depends_on:
+      - db
+      - rabbitmq
+    volumes:
+      - .:/app
+    restart: unless-stopped
 
 volumes:
   postgres_data:

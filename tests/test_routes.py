@@ -1,6 +1,6 @@
+import uuid
 import pytest
 from app.logger import logger
-import random
 
 # from .main import app
 from app.main import app
@@ -16,23 +16,24 @@ def client():
 def test_get_gigi(client):
     response = client.get("/gigi")
     assert response.status_code == 200
-    assert response.data.decode() == "this is gigi 2"
+    assert response.data.decode() == "this is gigi"
 
 
 user_data_signup = {
-    "name": f"ion{random.randint(100, 999)}",
-    # "name": "awdadw",
+    "name": f"user_{uuid.uuid4()}",
     "password": "gigi123A",
     "confirm_password": "gigi123A",
-    "email": f"fe{random.randint(100, 999)}@gmail.com",
-    # "email": "awdadw@gmail.com",
+    "email": f"{uuid.uuid4()}@gmail.com",
 }
 
 
 def test_signup(client):
     response = client.post("/signup", json=user_data_signup)
     assert response.status_code == 201
-    assert response.get_json() == f"User created with email {user_data_signup['name']}"
+    assert (
+        response.get_json()
+        == f"Account successfully created {user_data_signup['name']}"
+    )
 
 
 user_data_login = {

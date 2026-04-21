@@ -1,6 +1,21 @@
 from marshmallow import Schema, fields, validate, ValidationError, validates_schema
 import uuid
 import re
+from enum import Enum
+
+
+class NameEnum(str, Enum):
+    Gigi = "Gigi"
+    Teo = "Teo"
+    Ion = "Ion"
+
+
+class Data(Schema):
+    name = fields.Str(
+        required=True,
+        validate=validate.OneOf([e.value for e in NameEnum]),
+    )
+    age = fields.Int(validate=validate.Range(min=2, max=20))
 
 
 class TodoSchemaIn(Schema):

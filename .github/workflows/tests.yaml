@@ -10,7 +10,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4   # 🔴 REQUIRED
+        uses: actions/checkout@v4
+
+      # ✅ ADD IT HERE (right after checkout)
+      - name: Create .env file
+        run: |
+          echo "PG_USER=${{ secrets.PG_USER }}" >> .env
+          echo "PG_PASSWORD=${{ secrets.PG_PASSWORD }}" >> .env
+          echo "PG_DB=${{ secrets.PG_DB }}" >> .env
+          echo "PG_PORT=${{ secrets.PG_PORT }}" >> .env
+          echo "PG_HOST=db" >> .env
+          echo "JWT_SECRET_KEY=${{secrets.JWT_SECRET_KEY}}" >> .env
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -19,11 +29,20 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-     -  name: Build containers
-        run: docker-compose up -d --build
+      # ❗ REMOVE env: block (not needed anymore)
+      - name: Start containers
+        run: |
+          docker compose up -d --build
+          sleep 5
 
-      - name: Run tests in container
-        run: docker exec flask_app pytest -s
+      - name: Show logs if crash happens
+        run: docker compose logs
+
+      - name: Run migrations
+        run: docker exec flask_app flask db upgrade
+        # wad
+      - name: Run tests properly
+        run: docker exec  flask_app pytest
