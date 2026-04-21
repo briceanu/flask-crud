@@ -32,7 +32,7 @@ register_error_handlers(app)
 #     if request.headers.get("X-HEADER") != "gigi":
 #         abort(403, description="Invalid or missing X-HEADER")
 
-
+# awdawd
 # @app.after_request
 # def set_header(response):
 #     response.headers["X-GIGI"] = g.todo_id
